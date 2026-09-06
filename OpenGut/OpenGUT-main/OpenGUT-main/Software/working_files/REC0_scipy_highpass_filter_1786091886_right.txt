@@ -1,0 +1,1 @@
+scipy_highpass_filter,order=4,critical_frequency=200.0,analog=digital,REC0_scipy_highpass_filter_1786091886_right.wav

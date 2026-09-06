@@ -1,0 +1,129 @@
+:root {
+  color-scheme: light dark;
+  --fg: #1a1a1a;
+  --bg: #ffffff;
+  --muted: #666;
+  --accent: #2c6e49;
+  --border: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #eee;
+    --bg: #1b1b1b;
+    --muted: #aaa;
+    --border: #3a3a3a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  padding: 2rem;
+}
+
+.panel {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+h2 { font-size: 1.1rem; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+select, button {
+  font-size: 1rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+button {
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+button:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+#sound-select { flex: 1; min-width: 200px; }
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.badge.ok { background: #2c6e4922; border-color: #2c6e49; color: var(--accent); }
+.badge.stale { background: #99000022; border-color: #900; color: #c00; }
+.badge.unknown { color: var(--muted); }
+
+.countdown {
+  font-size: 3rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.progress {
+  height: 10px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+#progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+
+.live-values span { margin-right: 1.5rem; }
+
+#amplitude-canvas {
+  display: block;
+  width: 65vw;
+  height: 45vh;
+  margin: 1.5rem auto 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0b0f14;
+}
+
+.message {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: #99000022;
+  border: 1px solid #900;
+  margin-bottom: 1rem;
+}
+
+#result-panel img {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.hidden { display: none !important; }

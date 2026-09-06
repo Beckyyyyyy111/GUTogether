@@ -1,0 +1,3 @@
+[submodule "Software/AudioSep"]
+	path = Software/AudioSep
+	url = https://github.com/OpenGUT/AudioSep

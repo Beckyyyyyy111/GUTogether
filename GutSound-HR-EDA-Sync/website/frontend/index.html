@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Gut Sound + HR/EDA Sync Recorder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section class="panel">
+    <h1>Gut Sound + HR/EDA Sync Recorder</h1>
+
+    <div class="row">
+      <label for="sound-select">Gut sound</label>
+      <select id="sound-select"></select>
+    </div>
+
+    <div class="row stage-select">
+      <label><input type="radio" name="stage" value="1" checked /> Stage 1: listen only</label>
+      <label><input type="radio" name="stage" value="2" /> Stage 2: listen + watch live amplitude</label>
+    </div>
+
+    <div class="row">
+      <button id="play-btn">Play</button>
+      <button id="cancel-btn" disabled>Cancel</button>
+    </div>
+
+    <div class="row streams">
+      <span id="hr-status" class="badge unknown">HR: --</span>
+      <span id="eda-status" class="badge unknown">EDA: --</span>
+    </div>
+
+    <div id="countdown" class="countdown hidden"></div>
+
+    <div id="recording-panel" class="hidden">
+      <div class="row">
+        <strong>Recording&hellip;</strong>
+        <span id="rec-time">0.0s</span> / <span id="rec-duration">0.0s</span>
+      </div>
+      <div class="progress"><div id="progress-bar"></div></div>
+      <!-- Live HR/EDA numeric readout disabled per user request (kept for reference).
+      <div class="row live-values">
+        <span>HR: <span id="live-hr">--</span> bpm</span>
+        <span>EDA: <span id="live-eda">--</span> &micro;S</span>
+      </div>
+      -->
+      <audio id="player" hidden></audio>
+    </div>
+
+    <div id="message" class="message hidden"></div>
+
+    <div id="result-panel" class="hidden">
+      <p id="result-message"></p>
+      <!-- Detailed folder/CSV link/PNG preview disabled per user request; the
+      files are still written to Final/<folder>/ automatically either way.
+      <p>Folder: <code id="result-folder"></code></p>
+      <p><a id="result-csv" href="#" target="_blank">combined_long.csv</a></p>
+      <img id="result-png" alt="Combined summary plot" />
+      -->
+    </div>
+  </section>
+
+  <!-- Outside .panel so it can span the full screen width for participants
+       watching from across the room, instead of being capped to the panel's
+       narrow control-column width. -->
+  <canvas id="amplitude-canvas" class="hidden"></canvas>
+
+  <script src="app.js"></script>
+</body>
+</html>

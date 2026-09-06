@@ -1,0 +1,64 @@
+# --- Explicitly excluded per project policy: Report, participant data, media ---
+Report/
+tmp/
+River.zip
+pdf_review_contact.jpg
+~$*.docx
+~*.lck
+
+# Participant recordings / raw study data
+**/Participant_Gut_Sounds/
+GutSound-HR-EDA-Sync/Final/
+Questionnaire and Interview/
+HR-EDA-Time-Alignment/data/
+
+# Secrets
+**/WifiCredentials.json
+
+# Media (audio/image/video) anywhere in the tree
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.aac
+*.wma
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+*.ico
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# Python virtual environments
+**/.venv/
+**/env/
+**/venv/
+**/__pycache__/
+*.pyc
+*.egg-info/
+
+# Vendor / third-party pre-built binaries and duplicate archives
+**/EmotiBitSoftware_v1.16.5-Windows.zip
+**/EmotiBitSoftware_v1.16.5-Windows/
+**/EmotiBit_Docs-master.zip
+**/EmotiBit_Docs-master/
+OpenGut/OpenGUT-main.zip
+OpenGut-VAD/OpenGUT-main.zip
+
+# Large ML model checkpoints (public pretrained weights, re-downloadable) and derived outputs
+**/AudioSep/checkpoint/
+**/audiosep_30min_out.wav
+**/audiosep_30min_test.log
+
+# Misc noise
+**/.claude/scheduled_tasks.lock
+*.log

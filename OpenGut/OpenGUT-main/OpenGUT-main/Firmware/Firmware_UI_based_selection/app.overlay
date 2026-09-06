@@ -1,0 +1,136 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/pinctrl/nrf-pinctrl.h>
+
+/ {
+	aliases {
+		led0 = &led1;
+		led1 = &led2;
+		led2 = &led3;
+		led3 = &led4;
+		i2s-tx = &i2s0;
+		sdhc0 = &sdhc0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led1: led_1 {
+			gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+			label = "LED 1";
+		};
+
+		led2: led_2 {
+			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+			label = "LED 2";
+		};
+
+		led3: led_3 {
+			gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
+			label = "LED 3";
+		};
+
+		led4: led_4 {
+			gpios = <&gpio1 11 GPIO_ACTIVE_LOW>;
+			label = "LED 4";
+		};
+	};
+
+	fstab {
+		compatible = "zephyr,fstab";
+
+		ffs1: ffs1 {
+			compatible = "zephyr,fstab,fatfs";
+			automount;
+			disk-access;
+			mount-point = "/SD:";
+		};
+	};
+};
+
+&pinctrl {
+	spi1_default: spi1_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 14)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 27)>,
+				<NRF_PSEL(SPIM_MISO, 0, 26)>;
+		};
+	};
+
+	spi1_sleep: spi1_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 14)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 27)>,
+				<NRF_PSEL(SPIM_MISO, 0, 26)>;
+			low-power-enable;
+		};
+	};
+
+	pdm0_default: pdm0_default {
+		group1 {
+			psels = <NRF_PSEL(PDM_CLK, 0, 21)>,
+				<NRF_PSEL(PDM_DIN, 1, 8)>;
+		};
+	};
+
+	pdm0_sleep: pdm0_sleep {
+		group1 {
+			psels = <NRF_PSEL(PDM_CLK, 0, 21)>,
+				<NRF_PSEL(PDM_DIN, 1, 8)>;
+			low-power-enable;
+		};
+	};
+
+	i2s0_default: i2s0_default {
+		group1 {
+			psels = <NRF_PSEL(I2S_SCK_M, 0, 12)>,
+				<NRF_PSEL(I2S_LRCK_M, 0, 20)>,
+				<NRF_PSEL(I2S_SDOUT, 0, 15)>;
+		};
+	};
+
+	i2s0_sleep: i2s0_sleep {
+		group1 {
+			psels = <NRF_PSEL(I2S_SCK_M, 0, 12)>,
+				<NRF_PSEL(I2S_LRCK_M, 0, 20)>,
+				<NRF_PSEL(I2S_SDOUT, 0, 15)>;
+			low-power-enable;
+		};
+	};
+};
+
+&spi1 {
+	status = "okay";
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
+	cs-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+
+	sdhc0: sdhc@0 {
+		compatible = "zephyr,sdhc-spi-slot";
+		reg = <0>;
+		status = "okay";
+		spi-max-frequency = <8000000>;
+
+		mmc {
+			compatible = "zephyr,sdmmc-disk";
+			status = "okay";
+			disk-name = "SD";
+		};
+	};
+};
+
+&pdm0 {
+	status = "okay";
+	pinctrl-0 = <&pdm0_default>;
+	pinctrl-1 = <&pdm0_sleep>;
+	pinctrl-names = "default", "sleep";
+	clock-source = "PCLK32M_HFXO";
+	queue-size = <4>;
+};
+
+&i2s0 {
+	status = "okay";
+	pinctrl-0 = <&i2s0_default>;
+	pinctrl-1 = <&i2s0_sleep>;
+	pinctrl-names = "default", "sleep";
+};

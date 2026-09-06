@@ -1,0 +1,5 @@
+pylsl>=1.16.2
+pyqtgraph>=0.13.7
+PyQt5>=5.15.10
+numpy>=1.26
+pandas>=2.2

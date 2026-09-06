@@ -1,0 +1,1 @@
+clean_tail_r_highpass_filter,start_offset_min=4.0,end_offset_min=1.0,hp_order=4,hp_critical_frequency=200.0,Sound_1730000000_GroupA_002_clean_tail_r_highpass_filter_1784470553_right.wav
