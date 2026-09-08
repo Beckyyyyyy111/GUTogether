@@ -187,6 +187,21 @@ BUBBLE_SHADER_PATH = r'd:\AAAAAAAA\River\afl_ext\afl_ext_bubbles.frag'
 BUBBLE_RESOLUTION_W = 1280
 BUBBLE_RESOLUTION_H = 720
 
+# Runtime quality controller. It measures the observed TouchDesigner frame rate
+# (which includes GPU rendering and the rest of the network), smooths it with an
+# exponential moving average, and changes only after a sustained threshold
+# crossing. The maximum is kept at the original normal quality; the controller
+# degrades to the laptop profile and recovers when performance is stable.
+ADAPTIVE_INITIAL_QUALITY = 1
+ADAPTIVE_MIN_QUALITY = 0
+ADAPTIVE_MAX_QUALITY = 1
+ADAPTIVE_LOW_FPS = 48.0
+ADAPTIVE_RECOVER_FPS = 57.0
+ADAPTIVE_LOW_HOLD_SEC = 1.5
+ADAPTIVE_RECOVER_HOLD_SEC = 6.0
+ADAPTIVE_COOLDOWN_SEC = 3.0
+ADAPTIVE_FPS_EMA_ALPHA = 0.10
+
 # 自定义振幅包络参数（会被直接写死进 gut_envelope_script 回调代码里，见下方）
 ENV_ATTACK_SEC = 0.15       # 起音时间常数（秒）— 声音变响时包络追上去的速度，越小反应越快
 ENV_RELEASE_SEC = 0.06      # 释音时间常数（秒）— 声音变轻时包络落下去的速度。之前设成0会导致
@@ -334,6 +349,96 @@ glsl.par.value5x = 1.0 if HISTORY_FLOW_RIGHT_TO_LEFT else 0.0
 
 glsl.par.uniname6 = 'uStillness'
 glsl.par.value6x = 0.0
+
+glsl.par.uniname7 = 'uQualityLevel'
+glsl.par.value7x = ADAPTIVE_INITIAL_QUALITY
+
+# --- 2b. Runtime frame-rate quality controller ---
+adaptive_quality = new_op(executeDAT, 'adaptive_quality')
+adaptive_quality.text = '''import time
+
+LOW_FPS = ''' + repr(float(ADAPTIVE_LOW_FPS)) + '''
+RECOVER_FPS = ''' + repr(float(ADAPTIVE_RECOVER_FPS)) + '''
+LOW_HOLD_SEC = ''' + repr(float(ADAPTIVE_LOW_HOLD_SEC)) + '''
+RECOVER_HOLD_SEC = ''' + repr(float(ADAPTIVE_RECOVER_HOLD_SEC)) + '''
+COOLDOWN_SEC = ''' + repr(float(ADAPTIVE_COOLDOWN_SEC)) + '''
+EMA_ALPHA = ''' + repr(float(ADAPTIVE_FPS_EMA_ALPHA)) + '''
+MIN_QUALITY = ''' + repr(int(ADAPTIVE_MIN_QUALITY)) + '''
+MAX_QUALITY = ''' + repr(int(ADAPTIVE_MAX_QUALITY)) + '''
+
+_last_wall = None
+_ema_fps = 60.0
+_quality = ''' + repr(int(ADAPTIVE_INITIAL_QUALITY)) + '''
+_low_since = None
+_high_since = None
+_last_change = -1e9
+
+def _apply_quality():
+    river = op('river_ocean')
+    if river is not None:
+        river.par.value7x = float(_quality)
+
+def onFrameStart(frame):
+    global _last_wall, _ema_fps, _quality
+    global _low_since, _high_since, _last_change
+
+    now = time.perf_counter()
+    if _last_wall is None:
+        _last_wall = now
+        _apply_quality()
+        return
+
+    dt = now - _last_wall
+    _last_wall = now
+    if dt <= 0.0 or dt > 1.0:
+        return
+
+    instantaneous_fps = 1.0 / dt
+    _ema_fps += EMA_ALPHA * (instantaneous_fps - _ema_fps)
+
+    if now - _last_change < COOLDOWN_SEC:
+        _low_since = None
+        _high_since = None
+        return
+
+    if _ema_fps < LOW_FPS and _quality > MIN_QUALITY:
+        _high_since = None
+        if _low_since is None:
+            _low_since = now
+        elif now - _low_since >= LOW_HOLD_SEC:
+            _quality -= 1
+            _last_change = now
+            _low_since = None
+            _apply_quality()
+            print('[adaptive_quality] downgraded to', _quality,
+                  'at {:.1f} FPS'.format(_ema_fps))
+    elif _ema_fps > RECOVER_FPS and _quality < MAX_QUALITY:
+        _low_since = None
+        if _high_since is None:
+            _high_since = now
+        elif now - _high_since >= RECOVER_HOLD_SEC:
+            _quality += 1
+            _last_change = now
+            _high_since = None
+            _apply_quality()
+            print('[adaptive_quality] restored to', _quality,
+                  'at {:.1f} FPS'.format(_ema_fps))
+    else:
+        _low_since = None
+        _high_since = None
+
+def onStart():
+    _apply_quality()
+
+def create():
+    _apply_quality()
+'''
+adaptive_quality.par.active = True
+adaptive_quality.par.framestart = True
+adaptive_quality.par.start = True
+adaptive_quality.par.create = True
+adaptive_quality.nodeX = 600
+adaptive_quality.nodeY = -150
 
 # --- 3. "历史带"流动效果：一个 Script TOP 直接生成纹理，接回 river_ocean 输入0 ---
 # 原来是"Script CHOP（滚动缓冲区）→ CHOP to TOP（转成纹理）"两步，CHOP to TOP
@@ -872,3 +977,6 @@ print(f'     Peak Decay (currently {ENV_PEAK_DECAY_SEC}s) / Silence Hold / Silen
 print('  7. Click river_ocean to see the ocean!')
 print('  8. Click bubbles_out to see the standalone bubble visualization — bubbles rise')
 print('     continuously and scale up with activity_visual, independent from the water')
+print(f'  9. adaptive_quality starts at quality {ADAPTIVE_INITIAL_QUALITY}; sustained FPS below')
+print(f'     {ADAPTIVE_LOW_FPS:.0f} lowers river shader cost, and stable FPS above')
+print(f'     {ADAPTIVE_RECOVER_FPS:.0f} restores normal quality.')

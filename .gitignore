@@ -60,5 +60,9 @@ OpenGut-VAD/OpenGUT-main.zip
 **/audiosep_30min_test.log
 
 # Misc noise
-**/.claude/scheduled_tasks.lock
+**/scheduled_tasks.lock
 *.log
+
+# TouchDesigner autosave backups (numbered duplicates of the main .toe file)
+River/river_td/Backup/
+River/river_td/*.[0-9]*.toe

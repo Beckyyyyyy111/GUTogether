@@ -16,6 +16,7 @@ uniform float uWaveAmplitude; // 波浪振幅（波高）
 uniform float uTurbulence;    // 湍流强度，控制波浪的扭曲/拖拽程度
 uniform float uFlowRightToLeft; // 1.0=历史带新的声音从屏幕右边进来往左流，0.0=从左边进来往右流
 uniform float uStillness;     // "持续无声"程度（0~1，由CPU侧的静音计时器算出）：activity 连续低于阈值
+uniform float uQualityLevel;  // 0=low, 1=normal, 2=high; runtime-controlled by adaptive_quality
                                // 超过一段时间后才开始从0缓慢爬升到1，用来叠加额外的静谧感（减速+压暗，见main末尾）
 
 // 输入0号槽位 = "活跃度历史带"纹理（由 gut_history 这个 Script CHOP 持续滚动
@@ -26,23 +27,11 @@ uniform float uStillness;     // "持续无声"程度（0~1，由CPU侧的静音
 
 out vec4 fragColor;
 
-// Performance: 0 = fast (laptop), 1 = normal, 2 = high
-// 画质档位：0=低配（笔记本电脑）流畅优先，1=正常，2=高画质（更多波浪叠加层数、更多光线步进步数）
-#define QUALITY 1
-
-#if QUALITY == 0
-  #define ITERATIONS_RAYMARCH 6
-  #define ITERATIONS_NORMAL 12
-  #define RAYMARCH_STEPS 24
-#elif QUALITY == 1
-  #define ITERATIONS_RAYMARCH 10
-  #define ITERATIONS_NORMAL 20
-  #define RAYMARCH_STEPS 40
-#else
-  #define ITERATIONS_RAYMARCH 12
-  #define ITERATIONS_NORMAL 36
-  #define RAYMARCH_STEPS 64
-#endif
+// Maximum loop bounds remain compile-time constants, while the active iteration
+// counts are selected at runtime. Dynamic early exits allow the controller to
+// reduce shader work without recompiling the GLSL TOP.
+#define MAX_WAVE_ITERATIONS 36
+#define MAX_RAYMARCH_STEPS 64
 
 #define CAMERA_HEIGHT 1.5 // 摄像机离水面的高度
 
@@ -66,7 +55,8 @@ float getwaves(vec2 position, int iterations, float speed, float dragMult, float
   float sumOfValues = 0.0;
   float sumOfWeights = 0.0;
   float t = uTime * speed; // 用速度参数缩放时间，speed越大水面动得越快
-  for(int i = 0; i < iterations; i++) {
+  for(int i = 0; i < MAX_WAVE_ITERATIONS; i++) {
+    if (i >= iterations) break;
     vec2 p = vec2(sin(iter), cos(iter));
     vec2 res = wavedx(position, p, frequency, t * timeMultiplier + wavePhaseShift);
     position += p * res.y * weight * dragMult; // dragMult越大，波浪扭曲/挤压效果越强（湍流感）
@@ -82,11 +72,13 @@ float getwaves(vec2 position, int iterations, float speed, float dragMult, float
 
 // 光线步进求水面命中点，逻辑同原版，额外传入speed/dragMult/freqGain供getwaves使用
 float raymarchwater(vec3 camera, vec3 start, vec3 end, float depth,
-                    float speed, float dragMult, float freqGain) {
+                    float speed, float dragMult, float freqGain,
+                    int waveIterations, int raymarchSteps) {
   vec3 pos = start;
   vec3 dir = normalize(end - start);
-  for(int i = 0; i < RAYMARCH_STEPS; i++) {
-    float height = getwaves(pos.xz, ITERATIONS_RAYMARCH, speed, dragMult, freqGain) * depth - depth;
+  for(int i = 0; i < MAX_RAYMARCH_STEPS; i++) {
+    if (i >= raymarchSteps) break;
+    float height = getwaves(pos.xz, waveIterations, speed, dragMult, freqGain) * depth - depth;
     if(height + 0.01 > pos.y) {
       return distance(pos, camera);
     }
@@ -97,14 +89,15 @@ float raymarchwater(vec3 camera, vec3 start, vec3 end, float depth,
 
 // 计算水面法线，逻辑同原版，额外传入speed/dragMult/freqGain
 vec3 normal(vec2 pos, float e, float depth,
-            float speed, float dragMult, float freqGain) {
+            float speed, float dragMult, float freqGain,
+            int normalIterations) {
   vec2 ex = vec2(e, 0);
-  float H = getwaves(pos.xy, ITERATIONS_NORMAL, speed, dragMult, freqGain) * depth;
+  float H = getwaves(pos.xy, normalIterations, speed, dragMult, freqGain) * depth;
   vec3 a = vec3(pos.x, H, pos.y);
   return normalize(
     cross(
-      a - vec3(pos.x - e, getwaves(pos.xy - ex.xy, ITERATIONS_NORMAL, speed, dragMult, freqGain) * depth, pos.y),
-      a - vec3(pos.x, getwaves(pos.xy + ex.yx, ITERATIONS_NORMAL, speed, dragMult, freqGain) * depth, pos.y + e)
+      a - vec3(pos.x - e, getwaves(pos.xy - ex.xy, normalIterations, speed, dragMult, freqGain) * depth, pos.y),
+      a - vec3(pos.x, getwaves(pos.xy + ex.yx, normalIterations, speed, dragMult, freqGain) * depth, pos.y + e)
     )
   );
 }
@@ -189,6 +182,10 @@ vec3 aces_tonemap(vec3 color) {
 // TouchDesigner GLSL Multi TOP 的主函数入口（相当于Shadertoy的mainImage）
 void main()
 {
+  int quality = int(clamp(floor(uQualityLevel + 0.5), 0.0, 2.0));
+  int waveIterations = quality == 0 ? 6 : (quality == 1 ? 10 : 12);
+  int normalIterations = quality == 0 ? 12 : (quality == 1 ? 20 : 36);
+  int raymarchSteps = quality == 0 ? 24 : (quality == 1 ? 40 : 64);
   // "历史带"采样：按这个像素在屏幕上的横向位置，去输入0号槽位的历史带纹理上
   // 取出"当地"该有的活跃度，而不是用一个全局标量。uFlowRightToLeft 决定
   // 新的声音从哪一侧进来——纹理本身在CPU侧(gut_history)持续滚动更新，这里只
@@ -261,11 +258,13 @@ void main()
     vec3 lowHitPos  = origin + ray * lowPlaneHit;
 
     // 光线步进求出真实水面命中点
-    float dist = raymarchwater(origin, highHitPos, lowHitPos, depth, speed, dragMult, freqGain);
+    float dist = raymarchwater(origin, highHitPos, lowHitPos, depth, speed, dragMult, freqGain,
+                               waveIterations, raymarchSteps);
     vec3 waterHitPos = origin + ray * dist;
 
     // 计算命中点法线，并按距离平滑，避免远处闪烁噪点
-    vec3 N = normal(waterHitPos.xz, 0.01, depth, speed, dragMult, freqGain);
+    vec3 N = normal(waterHitPos.xz, 0.01, depth, speed, dragMult, freqGain,
+                    normalIterations);
     N = mix(N, vec3(0.0, 1.0, 0.0), 0.8 * min(1.0, sqrt(dist * 0.01) * 1.1));
 
     // 菲涅尔系数：视角越贴近水平，反射越强。原来这里没有上限——贴近地平线的
