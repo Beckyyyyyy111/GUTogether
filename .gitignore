@@ -38,6 +38,9 @@ HR-EDA-Time-Alignment/data/
 *.mkv
 *.webm
 
+# Exception: illustrated (non-photographic) workflow diagram used in the top-level README
+!docs/workflow-overview.png
+
 # Python virtual environments
 **/.venv/
 **/env/

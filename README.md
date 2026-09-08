@@ -2,6 +2,8 @@
 
 Research codebase for a gut-sound sensing and physiological (heart rate / EDA) synchronized-listening experiment. This repository contains the software developed across the project's different stages; each subfolder also has its own more detailed documentation.
 
+![Study workflow: (1) eat and record gut sound, (2) listen to and see both participants' gut activity, (3) shared reflection](docs/workflow-overview.png)
+
 ## Structure
 
 | Folder | Description |
