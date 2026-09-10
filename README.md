@@ -12,7 +12,7 @@ Research codebase for a gut-sound sensing and physiological (heart rate / EDA) s
 | [`EmotiBit/`](EmotiBit) | Material related to the EmotiBit wearable physiological sensor (heart rate, EDA) used for the physiological-response side of the experiment. |
 | [`HR-EDA-Time-Alignment/`](HR-EDA-Time-Alignment) | Standalone viewer/recorder that subscribes to EmotiBit's LSL `HR`/`EDA` streams and applies time correction so signals from independent devices share one clock. |
 | [`GutSound-HR-EDA-Sync/`](GutSound-HR-EDA-Sync) | Web tool that plays a selected gut-sound recording while synchronously recording HR/EDA from a live EmotiBit device, aligned to the same playback start time (t=0); each session produces an aligned waveform + physiology dataset. |
-| [`River/`](River) | TouchDesigner project and shaders for an audio-reactive visualization ("river") driven by gut-sound playback. |
+| [`River/`](River) | TouchDesigner networks and GLSL shaders for two gut-sound-driven design explorations: a river visualisation and a separate bubble visualisation. |
 | [`run_website.sh`](run_website.sh) | Convenience script that launches the local services above in sequence. |
 | [`log.md`](log.md) | Running changelog of cross-project code changes. |
 
@@ -24,7 +24,7 @@ Research codebase for a gut-sound sensing and physiological (heart rate / EDA) s
 
 ## Python / Node.js versions
 
-Everything in this repository is Python; **no Node.js is required** (`GutSound-HR-EDA-Sync/website/frontend` is plain static HTML/CSS/JS with no build step, served directly by the FastAPI backend).
+The main host-side tools use Python. The repository also contains static HTML/CSS/JavaScript, GLSL shaders, TouchDesigner project files, and hardware-related source files. **No Node.js build step is required**: `GutSound-HR-EDA-Sync/website/frontend` is served directly by the FastAPI backend.
 
 Python version requirements differ per sub-project — **use a separate virtual environment per sub-project** rather than sharing one:
 
@@ -60,10 +60,12 @@ env\Scripts\pip install -r requirements.txt
 
 ## Starting GUTogether
 
-Prerequisite: you've created the virtual environments described above for `GutSound-HR-EDA-Sync`, `OpenGut-Cuda`, and `HR-EDA-Time-Alignment` (`run_website.sh` hardcodes their relative paths).
+Prerequisite: create the virtual environments described above for `GutSound-HR-EDA-Sync`, `OpenGut-Cuda`, and `HR-EDA-Time-Alignment`.
+
+`run_website.sh` currently targets the Windows/Git Bash development environment used for this project. Before running it on another machine, update its `ROOT` variable so that it points to your local clone of this repository. Then run the script from the repository root:
 
 ```bash
-bash /d/AAAAAAAA/run_website.sh
+bash ./run_website.sh
 ```
 
 This launches, in order:
@@ -72,7 +74,20 @@ This launches, in order:
 2. The `OpenGut-Cuda` Software GUI (waveform/spectrogram/annotation tool)
 3. `HR-EDA-Time-Alignment`'s `dual-emotibit-viewer`
 
-`River` (TouchDesigner) is not auto-started by the script — open its `.toe` project manually. The script is safe to re-run: anything already running is skipped rather than duplicated. You can also start any single component manually per its own README instead of running everything at once.
+The script is safe to re-run: anything already running is skipped rather than duplicated. You can also start any single component manually by following its own README instead of running everything at once.
+
+## River and bubble visualisations
+
+The TouchDesigner visualisations are not started by `run_website.sh`. Open [`River/river_td/NewProject.toe`](River/river_td/NewProject.toe) manually, or rebuild the network by running [`River/afl_ext/setup_river_td.py`](River/afl_ext/setup_river_td.py) from a Text DAT inside TouchDesigner.
+
+Before rebuilding the network on another machine, update `SHADER_PATH` and `BUBBLE_SHADER_PATH` near the top of `setup_river_td.py` so that they point to the two local shader files. After the network has been created, select `gut_audio_file` in TouchDesigner and use the browse button beside its **File** parameter to choose a `.wav` recording. The selected file is preserved if the setup script is run again.
+
+The shared processing chain extracts a linear-amplitude envelope, adaptively normalises it, and applies a separate visual smoothing stage. The two GPU outputs then use that signal differently:
+
+- **River:** the smoothed activity is converted into stable calm and active states and written to a 512 x 1 texture representing six seconds of history. The river shader samples this texture according to horizontal screen position, allowing transitions to travel across the water. An adaptive controller lowers or restores shader iteration counts when the observed frame rate remains outside its configured thresholds.
+- **Bubbles:** the smoothed activity is sent directly to a separate GLSL shader and controls the radii of ten continuously moving bubbles. Their movement remains independent of audio amplitude.
+
+These visualisations were design explorations and were not included in the participant study.
 
 ## Using OpenGut recording
 
@@ -89,7 +104,7 @@ See [`OpenGut/OpenGUT-main/OpenGUT-main/Software/README.md`](OpenGut/OpenGUT-mai
 
 Both `OpenGut-Cuda` and `OpenGut-VAD` include AudioSep (natural-language-driven audio source separation) code, but **the pretrained model checkpoints are not included in this repository** (several GB, and they're generic weights that can be freely re-downloaded upstream rather than data belonging to this project). Before using this feature, download them yourself and place them under the corresponding `Software/AudioSep/checkpoint/` directory:
 
-- Download location: AudioSep's official checkpoint page on Hugging Face (the `checkpoint/` folder under the `audio-agi/AudioSep` space).
+- Download location: AudioSep's official checkpoint page on Hugging Face (the `checkpoint/` folder under the `audio-agi/AudioSep` space). Follow the upstream instructions linked from the AudioSep README below.
 - Files referenced by the code here: `audiosep_base_4M_steps.ckpt` and `music_speech_audioset_epoch_15_esc_89.98.pt`.
 
 See [`Software/AudioSep/README.md`](OpenGut-Cuda/OpenGUT-main/OpenGUT-main/Software/AudioSep/README.md) in either variant for full setup steps, including PyTorch version-compatibility notes.
@@ -100,7 +115,7 @@ See [`Software/AudioSep/README.md`](OpenGut-Cuda/OpenGUT-main/OpenGUT-main/Softw
 
 ## Sample data
 
-**This repository does not include any sample/demo data** (no example audio, example HR/EDA recordings, example screenshots, or demo videos). Every data file type actually used by these tools (`.wav`, images, video, etc.) is excluded wholesale via `.gitignore`; to try these tools you'll need to record with your own hardware (EmotiBit, OpenGUT board) or supply your own test data matching each tool's expected input format.
+**This repository does not include participant recordings or sample physiological datasets.** To try the tools, record data with your own hardware (EmotiBit and the OpenGUT board) or supply test data matching each tool's expected input format. Non-sensitive documentation assets, such as the illustrated workflow diagram above, are included.
 
 ## Data withheld for privacy reasons
 
@@ -112,6 +127,6 @@ This project involves human-subjects research. The following is **deliberately e
 - `GutSound-HR-EDA-Sync/Final/` and the corresponding HR-EDA session data: per-participant, per-timestamp session recordings + physiological signals + summary images.
 - Any raw-recording directories produced by later acquisition scripts (e.g. `HR-EDA-Time-Alignment/data/`).
 - A configuration file that once contained a real Wi-Fi password, vendor installer binaries, and other content unrelated to research data but not suitable for publishing.
-- All audio/image/video files are excluded wholesale, whether or not they involve participants, to avoid any accidental omission.
+- Audio, photographic, and video files are excluded by default to avoid accidental disclosure; only explicitly approved non-sensitive documentation assets are included.
 
 To reproduce the experiment or obtain the original dataset, please contact the project maintainer directly.
