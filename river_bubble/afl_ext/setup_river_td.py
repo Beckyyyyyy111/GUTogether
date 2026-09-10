@@ -175,7 +175,7 @@ TouchDesigner River Ocean Setup Script
 # ============================================================
 # 配置 — 根据你的环境修改这里
 # ============================================================
-SHADER_PATH = r'd:\AAAAAAAA\River\afl_ext\afl_ext_td.frag'
+SHADER_PATH = r'd:\AAAAAAAA\river_bubble\afl_ext\afl_ext_td.frag'
 # Audio File In CHOP 的 File 参数必须是具体文件，不能是文件夹。
 # 默认留空，运行建网脚本后可在 TouchDesigner 中点击 gut_audio_file，
 # 再通过 File 参数右侧的浏览按钮自行选择 .wav 文件。
@@ -186,7 +186,7 @@ RESOLUTION_H = 720
 # 气泡可视化——独立于河流水面的另一路输出，不叠加在水面上面（见文件末尾
 # 新增的第9步）。用的是同一份 gut_activity['activity_visual']，跟水面共享
 # 同一个"振幅"语义，但渲染在自己单独的 gut_bubbles / bubbles_out 节点上。
-BUBBLE_SHADER_PATH = r'd:\AAAAAAAA\River\afl_ext\afl_ext_bubbles.frag'
+BUBBLE_SHADER_PATH = r'd:\AAAAAAAA\river_bubble\afl_ext\afl_ext_bubbles.frag'
 BUBBLE_RESOLUTION_W = 1280
 BUBBLE_RESOLUTION_H = 720
 

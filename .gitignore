@@ -2,6 +2,7 @@
 Report/
 tmp/
 River.zip
+river_bubble.zip
 pdf_review_contact.jpg
 ~$*.docx
 ~*.lck
@@ -67,5 +68,5 @@ OpenGut-VAD/OpenGUT-main.zip
 *.log
 
 # TouchDesigner autosave backups (numbered duplicates of the main .toe file)
-River/river_td/Backup/
-River/river_td/*.[0-9]*.toe
+river_bubble/river_td/Backup/
+river_bubble/river_td/*.[0-9]*.toe

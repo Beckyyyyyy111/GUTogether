@@ -12,7 +12,7 @@ Research codebase for a gut-sound sensing and physiological (heart rate / EDA) s
 | [`EmotiBit/`](EmotiBit) | Material related to the EmotiBit wearable physiological sensor (heart rate, EDA) used for the physiological-response side of the experiment. |
 | [`HR-EDA-Time-Alignment/`](HR-EDA-Time-Alignment) | Standalone viewer/recorder that subscribes to EmotiBit's LSL `HR`/`EDA` streams and applies time correction so signals from independent devices share one clock. |
 | [`GutSound-HR-EDA-Sync/`](GutSound-HR-EDA-Sync) | Web tool that plays a selected gut-sound recording while synchronously recording HR/EDA from a live EmotiBit device, aligned to the same playback start time (t=0); each session produces an aligned waveform + physiology dataset. |
-| [`River/`](River) | TouchDesigner networks and GLSL shaders for two gut-sound-driven design explorations: a river visualisation and a separate bubble visualisation. |
+| [`river_bubble/`](river_bubble) | TouchDesigner networks and GLSL shaders for two gut-sound-driven design explorations: a river visualisation and a separate bubble visualisation. |
 | [`run_website.sh`](run_website.sh) | Convenience script that launches the local services above in sequence. |
 | [`log.md`](log.md) | Running changelog of cross-project code changes. |
 
@@ -78,7 +78,7 @@ The script is safe to re-run: anything already running is skipped rather than du
 
 ## River and bubble visualisations
 
-The TouchDesigner visualisations are not started by `run_website.sh`. Open [`River/river_td/NewProject.toe`](River/river_td/NewProject.toe) manually, or rebuild the network by running [`River/afl_ext/setup_river_td.py`](River/afl_ext/setup_river_td.py) from a Text DAT inside TouchDesigner.
+The TouchDesigner visualisations are not started by `run_website.sh`. Open [`river_bubble/river_td/NewProject.toe`](river_bubble/river_td/NewProject.toe) manually, or rebuild the network by running [`river_bubble/afl_ext/setup_river_td.py`](river_bubble/afl_ext/setup_river_td.py) from a Text DAT inside TouchDesigner.
 
 Before rebuilding the network on another machine, update `SHADER_PATH` and `BUBBLE_SHADER_PATH` near the top of `setup_river_td.py` so that they point to the two local shader files. After the network has been created, select `gut_audio_file` in TouchDesigner and use the browse button beside its **File** parameter to choose a `.wav` recording. The selected file is preserved if the setup script is run again.
 
