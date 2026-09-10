@@ -176,7 +176,10 @@ TouchDesigner River Ocean Setup Script
 # 配置 — 根据你的环境修改这里
 # ============================================================
 SHADER_PATH = r'd:\AAAAAAAA\River\afl_ext\afl_ext_td.frag'
-AUDIO_FOLDER = r'd:\AAAAAAAA\River\Gut Sounds'
+# Audio File In CHOP 的 File 参数必须是具体文件，不能是文件夹。
+# 默认留空，运行建网脚本后可在 TouchDesigner 中点击 gut_audio_file，
+# 再通过 File 参数右侧的浏览按钮自行选择 .wav 文件。
+AUDIO_FILE = ''
 RESOLUTION_W = 1280
 RESOLUTION_H = 720
 
@@ -613,8 +616,21 @@ gut_history_tex.nodeX = 500; gut_history_tex.nodeY = -550
 glsl.inputConnectors[0].connect(gut_history_tex)
 
 # --- 4. 音频文件输入链 ---
+# 重复运行建网脚本前，先记住用户此前在 TD 界面中选择的音频文件。
+# new_op() 会删除并重建同名节点；如果不先保存，这个选择会随节点一起丢失。
+previous_audio_file = ''
+existing_audio = p.op('gut_audio_file')
+if existing_audio is not None:
+	try:
+		candidate = str(existing_audio.par.file.eval()).strip()
+		# 旧版脚本曾把文件夹写进 File 参数；只保留实际的 WAV 路径。
+		if candidate.lower().endswith('.wav'):
+			previous_audio_file = candidate
+	except Exception:
+		pass
+
 audio_file = new_op(audiofileinCHOP, 'gut_audio_file')
-audio_file.par.file = AUDIO_FOLDER  # 脚本运行后手动在节点里选择具体的 .wav 文件
+audio_file.par.file = previous_audio_file or AUDIO_FILE
 audio_file.par.playmode = 0      # 0 = Locked to Timeline（跟随时间线播放和循环）
 
 # 音频输出 — 同步从扬声器播放肠道声音
@@ -954,8 +970,11 @@ print('============================================')
 print('  River Ocean network created!')
 print('============================================')
 print('')
-print(f'Audio folder: {AUDIO_FOLDER}')
-print('Put your .wav files there, then click gut_audio_file to select the file.')
+if previous_audio_file:
+	print(f'Audio file restored: {previous_audio_file}')
+else:
+	print('Audio file: not selected')
+	print("Click gut_audio_file and use its File parameter's browse button to select a .wav file.")
 print('')
 print('Next steps:')
 print('  1. Click gut_audio_file — set the correct .wav file path')
