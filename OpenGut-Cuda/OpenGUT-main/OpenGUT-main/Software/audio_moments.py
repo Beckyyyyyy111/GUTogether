@@ -30,7 +30,7 @@ MOMENT_LABELS = {
     "eating_end": "near end of eating",
     "peak": "peak gut-sound activity",
 }
-DEFAULT_EATING_END_OFFSET = 360.0  # 6 minutes before the recording ends
+DEFAULT_EATING_END_OFFSET = 240.0  # 4 minutes before the recording ends
 DEFAULT_PEAK_SEARCH_MARGIN = 180.0  # 3 minutes excluded from each end when searching for the peak
 
 # Single source of truth for the fixed Participant_Gut_Sounds pipeline layout:
